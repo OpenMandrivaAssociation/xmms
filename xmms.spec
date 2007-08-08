@@ -1,6 +1,6 @@
 %define	name	xmms
 %define	version 1.2.10
-%define release	%mkrel 34
+%define release	%mkrel 35
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
@@ -69,6 +69,9 @@ Patch107:	xmms-1.2.10-ipv6-address.patch
 Patch108:	xmms-1.2.10-ipv6-merge.patch
 Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
 Patch110:	xmms-1.2.10-fix-underquoted-calls.patch
+# #29976, CVE-2007-0653,0654
+Patch111:	90-bmp-loader-overflows.dpatch
+
 BuildRequires:	ORBit-devel
 BuildRequires:	automake1.4
 BuildRequires:	automake1.7
@@ -204,6 +207,7 @@ BuildRequires:	mesagl-devel
 %patch108 -p0 -b .ipv6merge
 %patch109 -p1 -b .crossfade
 %patch110 -p1 -b .underquoted
+%patch111 -p1 -b .CVE-2007-0653.0654
 # lib64 fix
 perl -pi -e "s|/lib\b|/%{_lib}|g" acinclude.m4
 
