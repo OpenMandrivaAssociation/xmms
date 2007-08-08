@@ -211,6 +211,12 @@ export WANT_AUTOCONF_2_5="1"
 rm -f configure
 libtoolize --copy --force; aclocal-1.7; autoconf --force; automake-1.7 --add-missing --copy
 
+pushd %{additional_effect_plugin_a}
+  # (blino) @PTHREAD_LIBS@ has never worked here, it was magically ignored by old libtool
+  #         pthread libraries are already present in the gtk linking options
+  perl -pi -e 's/\s*\@PTHREAD_LIBS\@//' src/Makefile.*
+popd
+
 %build
 
 %configure2_5x \
