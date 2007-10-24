@@ -7,6 +7,7 @@
 %define additional_misc_plugin_a xmms-shell-0.99.3
 %define major 1
 %define libname %mklibname xmms %{major}
+%define develname %mklibname -d xmms
 
 # Define arches where we build the Mesa3d capable plugin
 %define mesa_arches %{ix86} ppc sparc x86_64
@@ -106,15 +107,15 @@ Group:		System/Libraries
 %description -n	%{libname}
 This library is mandatory for xmms and for all its plugins to run.
 
-%package -n	%{libname}-devel
+%package -n	%develname
 Summary:	Development package with static libs and headers
 Group:		Development/C
 Requires:	%{libname} = %{version}-%{release}
 Provides:	libxmms-devel = %{version}-%{release} 
 Provides:	%{name}-devel = %{version}-%{release} 
-Provides:	%{name}%{major}-devel = %{version}-%{release} 
+Obsoletes: %mklibname -d xmms 1
 
-%description -n	%{libname}-devel
+%description -n	%develname
 Static libraries and header files required for compiling xmms plugins.
 
 %package	esd
@@ -416,7 +417,7 @@ rm -rf %{buildroot}
 %doc COPYING
 %{_libdir}/libxmms.so.*
 
-%files -n %{libname}-devel
+%files -n %develname
 %defattr(-,root,root)
 %doc COPYING ChangeLog 
 %{_libdir}/lib*.so
