@@ -1,6 +1,6 @@
 %define	name	xmms
-%define	version 1.2.10
-%define release	%mkrel 35
+%define	version 1.2.11
+%define release	%mkrel 1
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
@@ -22,8 +22,6 @@ URL:		http://www.xmms.org/
 Source0:	http://www.xmms.org/files/1.2.x/%{fname}.tar.bz2
 Source4:	%{name}-icons.tar.bz2
 Source5:	xmms
-# updated translations for 1.2.9; to remove or update for next version (pablo)
-Source6:	xmms-pofiles.tar.bz2
 Source10:	%{name}.16.png
 Source11:	%{name}.32.png
 Source12:	%{name}.48.png
@@ -39,40 +37,26 @@ Patch10:	xmms-fix-smallfiles.patch
 Patch12:	xmms-fix-textbox.patch
 Patch15:	xmms-1.2.9-do-not-override-our-flags.patch
 Patch16:	xmms-1.2.4-sox-do-not-override-our-flags.patch
-Patch18:	xmms-1.2.7-fix-http-title-mpg123.patch
+Patch18:	xmms-1.2.11-fix-http-title-mpg123.patch
 Patch20:	xmms-shell-0.99.3-empty-playlist.patch
 Patch22:	xmms-shell-0.99.3-g++-3.3-build.patch
 Patch23:	xmms-shell-0.99.3-configure-fix.patch
-Patch24:	xmms-1.2.9-libtool.patch
 Patch25:	xmms-1.2.10-cvs-fix-alsa-unpause.patch
-Patch26:	xmms-1.2.10-fix-alsa.patch
 Patch27:	xmms-1.2.10-recode-id3.patch
-Patch30:	xmms-1.2.10-gcc34.patch
-Patch31:	xmms-1.2.10-gcc4.patch
 Patch32:	xmms-1.2.10-sox_effect-gcc4.patch
 # 3dse patch by Cornelis Frank <Frank.Cornelis@rug.ac.be>, web http://studwww.rug.ac.be/~fcorneli/xmms/, license GPL
-Patch50:	 xmms-1.2.8-pre1-3dse.patch
+Patch50:	 xmms-1.2.11-3dse.patch
 # rediffed from this mail:
 # http://lists.xmms.org/pipermail/xmms-devel/2002-January/002282.html
-Patch60:	xmms-1.2.9-pre1-AB-repeat.patch
-Patch100:	xmms-1.2.8-pre1-rva-2.patch
-#gw adds an option to the diskwriter plugin: "Don't strip file name extension",
-#gw useful for module files named like mod.demosong1
-Patch101:	http://ee.tut.fi/~heikki/foss/xmms/xmms-1.2.10-disk_writer-patch.diff
-# (blino) support for KOI8/CP1251/CP866/UTF-8 encoding autodetection, from http://rusxmms.sourceforge.net/
-# tarball from http://prdownloads.sourceforge.net/rusxmms/xmms-1.2.10-recode-csa28.1.tar.bz2
-Patch102:	xmms-1.2.10-ds-recode.patch
-Patch103:	xmms-1.2.10-fix-rus-typos.patch
+Patch60:	xmms-1.2.11-ab.patch
+Patch100:	xmms-1.2.11-rva.patch
 Patch104:	xmms-1.2.10-fonts.patch
-Patch105:	xmms-1.2.10-AM_LC_MESSAGES.patch
 Patch106:	xmms-1.2.10-ipv6.patch
 Patch107:	xmms-1.2.10-ipv6-address.patch
 Patch108:	xmms-1.2.10-ipv6-merge.patch
 Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
-Patch110:	xmms-1.2.10-fix-underquoted-calls.patch
 # #29976, CVE-2007-0653,0654
-Patch111:	90-bmp-loader-overflows.dpatch
-
+Patch111:	xmms-1.2.11-CVE-2007-0653.0654.patch
 BuildRequires:	ORBit-devel
 BuildRequires:	automake1.4
 BuildRequires:	automake1.7
@@ -178,16 +162,12 @@ BuildRequires:	mesagl-devel
 %patch12 -p0
 %patch15 -p1
 %patch16 -p0
-%patch18 -p0
+%patch18 -p1
 %patch20 -p0
 %patch22 -p0
 %patch23 -p0 -b .no-system-xmms-devel
-%patch24 -p1 -b .libtool
 #%patch25 -p0 -b .alsa-unpause
-%patch26 -p0 -b .alsa
 %patch27 -p0 -b .recode
-%patch30 -p0 -b .gcc34
-%patch31 -p0 -b .gcc4
 %patch32 -p0 -b .gcc4
 %ifnarch sparc ppc
 %patch50 -p1 -b .3dse
@@ -198,23 +178,18 @@ BuildRequires:	mesagl-devel
 %patch60 -p1 -b .ab
 
 %patch100 -p1 -b .rva
-%patch101 -p0 -b .diskwriter
-%patch102 -p1 -b .rusxmms
-%patch103 -p0 -b .ruspo
 %patch104 -p1 -b .fonts
-%patch105 -p0 -b .ac_lc_messages
 %patch106 -p0 -b .ipv6
 %patch107 -p0 -b .ipv6addr
 %patch108 -p0 -b .ipv6merge
 %patch109 -p1 -b .crossfade
-%patch110 -p1 -b .underquoted
 %patch111 -p1 -b .CVE-2007-0653.0654
 # lib64 fix
 perl -pi -e "s|/lib\b|/%{_lib}|g" acinclude.m4
 
 export WANT_AUTOCONF_2_5="1"
 rm -f configure
-libtoolize --copy --force; aclocal-1.7; autoconf --force; automake-1.7 --add-missing --copy
+libtoolize --copy --force; aclocal; autoconf --force; automake --add-missing --copy
 
 pushd %{additional_effect_plugin_a}
   # (blino) @PTHREAD_LIBS@ has never worked here, it was magically ignored by old libtool
@@ -287,11 +262,6 @@ popd
 
 install -m644 %{SOURCE100} %{buildroot}/%{_datadir}/xmms/xmms.xpm
 
-# compatibility symlink
-[ -r %{buildroot}/%{_libdir}/libxmms.so.1 ] && \
-    ln -s libxmms.so.1 %{buildroot}/%{_libdir}/libxmms.so.0
-
-
 install -d %{buildroot}/%{_datadir}/mime-info
 cat > %{buildroot}/%{_datadir}/mime-info/xmms.keys << EOF
 audio/x-mp3:
@@ -332,15 +302,6 @@ install -m 644 %{SOURCE12} %{buildroot}/%{_liconsdir}/%{name}.png
 
 # replaced with zh_??
 rm -rf %{buildroot}/%{_datadir}/locale/zh_??.*
-#====
-# updated po files for version 1.2.9 (pablo)
-tar jxvf %{SOURCE6}
-for i in po/*.po
-do
-    mkdir -p %{buildroot}/usr/share/locale/`basename $i .po`/LC_MESSAGES
-    msgfmt -o %{buildroot}/usr/share/locale/`basename $i .po`/LC_MESSAGES/xmms.mo $i
-done
-#====
 
 # RTL is not supported in gtk1
 rm -rf %{buildroot}/%{_datadir}/locale/{ar,fa,he}
@@ -415,7 +376,7 @@ rm -rf %{buildroot}
 %files -n %{libname}
 %defattr(-,root,root)
 %doc COPYING
-%{_libdir}/libxmms.so.*
+%{_libdir}/libxmms.so.%{major}*
 
 %files -n %develname
 %defattr(-,root,root)
