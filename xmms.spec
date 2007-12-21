@@ -70,6 +70,7 @@ BuildRequires:	libxml-devel
 BuildRequires:	oggvorbis-devel
 BuildRequires:	readline-devel
 Requires:	%{libname} = %{version}-%{release}
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Requires(post): desktop-file-utils
 Requires(postun): desktop-file-utils
 Requires:	soundwrapper
