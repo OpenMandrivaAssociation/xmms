@@ -321,13 +321,17 @@ rm -f %{buildroot}/%{_datadir}/mime-info/xmms.keys
 
 rm -f %{buildroot}%{_libdir}/xmms/*/*.*a
 
+%if %mdkversion < 200900
 %post
 %update_menus
 %update_desktop_database
+%endif
 
+%if %mdkversion < 200900
 %postun
 %clean_menus
 %clean_desktop_database
+%endif
 
 %if %mdkversion < 200900
 %post -n %{libname} -p /sbin/ldconfig
