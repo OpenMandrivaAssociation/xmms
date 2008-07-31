@@ -1,6 +1,6 @@
 %define	name	xmms
 %define	version 1.2.11
-%define release	%mkrel 1
+%define release	%mkrel 3
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
