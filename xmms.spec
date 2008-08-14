@@ -1,6 +1,6 @@
 %define	name	xmms
 %define	version 1.2.11
-%define release	%mkrel 4
+%define release	%mkrel 2
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
@@ -44,6 +44,7 @@ Patch23:	xmms-shell-0.99.3-configure-fix.patch
 Patch25:	xmms-1.2.10-cvs-fix-alsa-unpause.patch
 Patch27:	xmms-1.2.10-recode-id3.patch
 Patch32:	xmms-1.2.10-sox_effect-gcc4.patch
+Patch33:	xmms-shell-0.99.3-gcc4.3.patch
 # 3dse patch by Cornelis Frank <Frank.Cornelis@rug.ac.be>, web http://studwww.rug.ac.be/~fcorneli/xmms/, license GPL
 Patch50:	 xmms-1.2.11-3dse.patch
 # rediffed from this mail:
@@ -172,6 +173,7 @@ BuildRequires:	mesagl-devel
 %ifnarch sparc ppc
 %patch50 -p1 -b .3dse
 %endif
+%patch33 -p0
 
 # rediffed from this mail:
 # http://lists.xmms.org/pipermail/xmms-devel/2002-January/002282.html
