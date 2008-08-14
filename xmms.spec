@@ -16,12 +16,11 @@ Name:		%{name}
 Summary:	The Sound player with the WinAmp GUI
 Version:	%{version}
 Release:	%{release}
-License:	GPL
+License:	GPLv2+
 Group:		Sound
 URL:		http://www.xmms.org/
 Source0:	http://www.xmms.org/files/1.2.x/%{fname}.tar.bz2
 Source4:	%{name}-icons.tar.bz2
-Source5:	xmms
 Source10:	%{name}.16.png
 Source11:	%{name}.32.png
 Source12:	%{name}.48.png
@@ -277,9 +276,6 @@ if [ ! -r %{buildroot}/%{_datadir}/pixmaps/xmms_logo.xpm ]; then
     cp %{SOURCE100} %{buildroot}/%{_datadir}/pixmaps/xmms.xpm
 fi
 
-# LMDK menu
-install -d %{buildroot}/%{_menudir}
-install -m644 %{SOURCE5} %{buildroot}/%{_menudir}
 #xdg menu
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 cat > $RPM_BUILD_ROOT%{_datadir}/applications/mandriva-%{name}.desktop << EOF
@@ -324,18 +320,6 @@ rm -f %{buildroot}/%{_datadir}/mime-info/xmms.keys
 rm -f %{buildroot}%{_libdir}/xmms/*/*.*a
 
 %if %mdkversion < 200900
-%post
-%update_menus
-%update_desktop_database
-%endif
-
-%if %mdkversion < 200900
-%postun
-%clean_menus
-%clean_desktop_database
-%endif
-
-%if %mdkversion < 200900
 %post -n %{libname} -p /sbin/ldconfig
 %endif
 
@@ -378,7 +362,6 @@ rm -rf %{buildroot}
 %{_miconsdir}/%{name}.png
 %{_liconsdir}/%{name}.png
 %_datadir/applications/mandriva*
-%{_menudir}/*
 %{_mandir}/*/xmms.*
 %{_mandir}/*/wmxmms.*
 %{_mandir}/*/xmms-shell.*
