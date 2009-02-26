@@ -28,20 +28,20 @@ Source50:	http://staff.xmms.org/zinx/xmms/%{additional_effect_plugin_a}.tar.bz2
 Source51:	http://xmms-shell.sourceforge.net/%{additional_misc_plugin_a}.tar.bz2
 Source100:	xmms-logo.xpm
 Patch3:		xmms-1.2.4-latin1.patch
-Patch4:		xmms-1.2-audio-patch
+Patch4:		xmms-1.2.11-audio.patch
 Patch7:		xmms-shell-0.99.3-fix-missing-ncurses.patch
 Patch8:		xmms-1.2.7-sox-fix-bootstrap.patch
 Patch9:		xmms-shell-0.99.3-fix-bootstrap.patch
 Patch10:	xmms-fix-smallfiles.patch
 Patch12:	xmms-fix-textbox.patch
-Patch15:	xmms-1.2.9-do-not-override-our-flags.patch
+Patch15:	xmms-1.2.11-do-not-override-our-flags.patch
 Patch16:	xmms-1.2.4-sox-do-not-override-our-flags.patch
 Patch18:	xmms-1.2.11-fix-http-title-mpg123.patch
 Patch20:	xmms-shell-0.99.3-empty-playlist.patch
 Patch22:	xmms-shell-0.99.3-g++-3.3-build.patch
 Patch23:	xmms-shell-0.99.3-configure-fix.patch
 Patch25:	xmms-1.2.10-cvs-fix-alsa-unpause.patch
-Patch27:	xmms-1.2.10-recode-id3.patch
+Patch27:	xmms-1.2.11-recode-id3.patch
 Patch32:	xmms-1.2.10-sox_effect-gcc4.patch
 Patch33:	xmms-shell-0.99.3-gcc4.3.patch
 # 3dse patch by Cornelis Frank <Frank.Cornelis@rug.ac.be>, web http://studwww.rug.ac.be/~fcorneli/xmms/, license GPL
@@ -53,7 +53,7 @@ Patch100:	xmms-1.2.11-rva.patch
 Patch104:	xmms-1.2.10-fonts.patch
 Patch106:	xmms-1.2.10-ipv6.patch
 Patch107:	xmms-1.2.10-ipv6-address.patch
-Patch108:	xmms-1.2.10-ipv6-merge.patch
+Patch108:	xmms-1.2.11-ipv6-merge.patch
 Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
 # #29976, CVE-2007-0653,0654
 Patch111:	xmms-1.2.11-CVE-2007-0653.0654.patch
@@ -154,12 +154,12 @@ BuildRequires:	mesagl-devel
 
 %setup -q -n %{fname} -a 50 -a 51
 %patch3 -p0
-%patch4 -p0
+%patch4 -p1
 %patch7 -p1
 %patch8 -p1
-%patch9 -p1
-%patch10 -p0
-%patch12 -p0
+%patch9 -p0
+%patch10 -p1
+%patch12 -p1
 %patch15 -p1
 %patch16 -p0
 %patch18 -p1
@@ -167,7 +167,7 @@ BuildRequires:	mesagl-devel
 %patch22 -p0
 %patch23 -p0 -b .no-system-xmms-devel
 #%patch25 -p0 -b .alsa-unpause
-%patch27 -p0 -b .recode
+%patch27 -p1 -b .recode
 %patch32 -p0 -b .gcc4
 %ifnarch sparc ppc
 %patch50 -p1 -b .3dse
@@ -182,7 +182,7 @@ BuildRequires:	mesagl-devel
 %patch104 -p1 -b .fonts
 %patch106 -p0 -b .ipv6
 %patch107 -p0 -b .ipv6addr
-%patch108 -p0 -b .ipv6merge
+%patch108 -p1 -b .ipv6merge
 %patch109 -p1 -b .crossfade
 %patch111 -p1 -b .CVE-2007-0653.0654
 # lib64 fix
