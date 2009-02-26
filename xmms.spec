@@ -1,6 +1,6 @@
 %define	name	xmms
 %define	version 1.2.11
-%define release	%mkrel 2
+%define release	%mkrel 3
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
@@ -27,6 +27,7 @@ Source12:	%{name}.48.png
 Source50:	http://staff.xmms.org/zinx/xmms/%{additional_effect_plugin_a}.tar.bz2
 Source51:	http://xmms-shell.sourceforge.net/%{additional_misc_plugin_a}.tar.bz2
 Source100:	xmms-logo.xpm
+Patch:		xmms-1.2.11-remove-libtool-from-acinclude.patch
 Patch3:		xmms-1.2.4-latin1.patch
 Patch4:		xmms-1.2.11-audio.patch
 Patch7:		xmms-shell-0.99.3-fix-missing-ncurses.patch
@@ -153,6 +154,7 @@ BuildRequires:	mesagl-devel
 %prep
 
 %setup -q -n %{fname} -a 50 -a 51
+%patch -p1
 %patch3 -p0
 %patch4 -p1
 %patch7 -p1
@@ -185,8 +187,6 @@ BuildRequires:	mesagl-devel
 %patch108 -p1 -b .ipv6merge
 %patch109 -p1 -b .crossfade
 %patch111 -p1 -b .CVE-2007-0653.0654
-# lib64 fix
-perl -pi -e "s|/lib\b|/%{_lib}|g" acinclude.m4
 
 export WANT_AUTOCONF_2_5="1"
 rm -f configure
