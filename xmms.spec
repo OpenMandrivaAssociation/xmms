@@ -226,7 +226,7 @@ export PATH=.:$PATH
 
 pushd %{additional_effect_plugin_a}
     rm -f configure
-    libtoolize --copy --force; aclocal-1.4; autoconf; automake-1.4 --add-missing --copy
+    libtoolize --install --force; aclocal-1.4; autoconf; automake-1.4 --add-missing --copy
     %configure2_5x
     %make
 popd
