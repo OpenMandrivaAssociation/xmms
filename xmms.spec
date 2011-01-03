@@ -1,6 +1,6 @@
 %define	name	xmms
 %define	version 1.2.11
-%define release	%mkrel 4
+%define release	%mkrel 5
 %define	fname	%{name}-%{version}
 
 %define additional_effect_plugin_a sox-effect-0.0.1
@@ -60,7 +60,7 @@ Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
 Patch111:	xmms-1.2.11-CVE-2007-0653.0654.patch
 BuildRequires:	ORBit-devel
 BuildRequires:	automake1.4
-BuildRequires:	automake1.7
+BuildRequires:	automake
 BuildRequires:	db1-devel
 BuildRequires:	gettext
 BuildRequires:	gettext-devel
@@ -233,7 +233,7 @@ popd
 
 pushd %{additional_misc_plugin_a}
     rm -f configure
-    libtoolize --copy --force; aclocal-1.7; autoconf --force; automake-1.7 --add-missing --copy
+    libtoolize --copy --force; aclocal; autoconf --force; automake --add-missing --copy
     %configure2_5x
     %make
 popd
