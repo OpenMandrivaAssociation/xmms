@@ -59,7 +59,6 @@ Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
 # #29976, CVE-2007-0653,0654
 Patch111:	xmms-1.2.11-CVE-2007-0653.0654.patch
 BuildRequires:	ORBit-devel
-BuildRequires:	automake1.4
 BuildRequires:	automake
 BuildRequires:	db1-devel
 BuildRequires:	gettext
@@ -190,7 +189,7 @@ BuildRequires:	mesagl-devel
 
 export WANT_AUTOCONF_2_5="1"
 rm -f configure
-libtoolize --copy --force; aclocal; autoconf --force; automake --add-missing --copy
+autoreconf -fi
 
 pushd %{additional_effect_plugin_a}
   # (blino) @PTHREAD_LIBS@ has never worked here, it was magically ignored by old libtool
@@ -226,14 +225,14 @@ export PATH=.:$PATH
 
 pushd %{additional_effect_plugin_a}
     rm -f configure
-    libtoolize --install --force; aclocal-1.4; autoconf; automake-1.4 --add-missing --copy
+    autoreconf -fi
     %configure2_5x
     %make
 popd
 
 pushd %{additional_misc_plugin_a}
     rm -f configure
-    libtoolize --copy --force; aclocal; autoconf --force; automake --add-missing --copy
+    autoreconf -fi
     %configure2_5x
     %make
 popd
