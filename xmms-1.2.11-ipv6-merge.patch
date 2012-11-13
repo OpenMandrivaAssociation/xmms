@@ -1,0 +1,350 @@
+diff -p -up xmms-1.2.11/Input/cdaudio/http.c.ipv6merge xmms-1.2.11/Input/cdaudio/http.c
+--- xmms-1.2.11/Input/cdaudio/http.c.ipv6merge	2006-07-16 15:40:04.000000000 +0200
++++ xmms-1.2.11/Input/cdaudio/http.c	2009-02-26 09:59:20.000000000 +0100
+@@ -25,18 +25,13 @@
+ gint http_open_connection(gchar * server, gint port)
+ {
+ 	gint sock;
+-#ifdef USE_IPV6
+ 	struct addrinfo hints, *res, *res0;
+ 	char service[6];
+-#else
+-	struct hostent *host;
+-	struct sockaddr_in address;
+-#endif
+ 
+-#ifdef USE_IPV6
+ 	g_snprintf(service, 6, "%d", port);
+ 	memset(&hints, 0, sizeof(hints));
+ 	hints.ai_socktype = SOCK_STREAM;
++	hints.ai_family = PF_UNSPEC;
+ 
+ 	if (getaddrinfo(server, service, &hints, &res0))
+ 		return 0;
+@@ -60,24 +55,13 @@ gint http_open_connection(gchar * server
+ 				return 0;
+ 			}
+ 		}
++		/* Connection is established */
+ 		freeaddrinfo(res0);
+ 		return sock;
+ 	}
+-#else
+-	sock = socket(AF_INET, SOCK_STREAM, 0);
+-	address.sin_family = AF_INET;
+ 
+-	if (!(host = gethostbyname(server)))
+-		return 0;
+-
+-	memcpy(&address.sin_addr.s_addr, *(host->h_addr_list), sizeof(address.sin_addr.s_addr));
+-	address.sin_port = g_htons(port);
+-
+-	if (connect(sock, (struct sockaddr *) &address, sizeof (struct sockaddr_in)) == -1)
+-		return 0;
+-
+-#endif
+-	return sock;
++	/* No connetion established, so we return 0 */
++	return 0;
+ }
+ 
+ void http_close_connection(gint sock)
+diff -p -up xmms-1.2.11/Input/mpg123/http.c.ipv6merge xmms-1.2.11/Input/mpg123/http.c
+--- xmms-1.2.11/Input/mpg123/http.c.ipv6merge	2009-02-26 09:59:20.000000000 +0100
++++ xmms-1.2.11/Input/mpg123/http.c	2009-02-26 09:59:20.000000000 +0100
+@@ -345,13 +345,8 @@ static void *http_buffer_loop(void *arg)
+ 	gboolean redirect;
+ 	int udp_sock = 0;
+ 	fd_set set;
+-#ifdef USE_IPV6
+ 	struct addrinfo hints, *res, *res0;
+ 	char service[6];
+-#else
+-	struct hostent *hp;
+-	struct sockaddr_in address;
+-#endif
+ 	struct timeval tv;
+ 
+ 	url = (gchar *) arg;
+@@ -373,12 +368,13 @@ static void *http_buffer_loop(void *arg)
+ 		chost = mpg123_cfg.use_proxy ? mpg123_cfg.proxy_host : host;
+ 		cport = mpg123_cfg.use_proxy ? mpg123_cfg.proxy_port : port;
+ 
+-#ifdef USE_IPV6
+ 		g_snprintf(service, 6, "%d", cport);
+ 		memset(&hints, 0, sizeof(hints));
+ 		hints.ai_socktype = SOCK_STREAM;
++		hints.ai_family = PF_UNSPEC;
+ 		if (! getaddrinfo(chost, service, &hints, &res0)) {
+-			eof = TRUE;
++			int connected = 0;
++
+ 			for (res = res0; res; res = res->ai_next) {
+ 				if ((sock = socket (res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+ 					continue;
+@@ -388,20 +384,42 @@ static void *http_buffer_loop(void *arg)
+ 				g_free(status);
+ 				((struct sockaddr_in6 *)res->ai_addr)->sin6_port = htons(cport);
+ 				if (connect(sock, res->ai_addr, res->ai_addrlen) < 0) {
++
+ 					if (errno != EINPROGRESS) {
+ 						close(sock);
+ 						continue;
+ 					}
++					/* We are EINPROGRESS. We need to wait here until we are connected as otherwise we
++					* will never get to other addresses.
++					*/
++					while (going) {
++						fd_set set;
++						FD_ZERO(&set);
++						FD_SET(sock, &set);
++
++						tv.tv_sec = 0;
++						tv.tv_usec = 10000;
++						if (select(sock + 1, NULL, &set, NULL, &tv) > 0) {
++							err_len = sizeof (error);
++							getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &err_len);
++							if (error == 0)
++								connected = 1;
++							break;
++						}
++						else if( errno == EBADF || error == ENOMEM )
++							break; /* Select failures - break to avoid possible infinite loop */
++					}
+ 				}
+-				eof = FALSE;
+-				break;
++				if( connected )
++					break;
+ 			}
+ 			freeaddrinfo(res0);
+-			if (eof) {
++			if (!connected) {
+ 				status = g_strdup_printf(_("Couldn't connect to host %s:%d"), chost, cport);
+ 				show_error_message(status);
+ 				g_free(status);
+ 				mpg123_ip.set_info_text(NULL);
++				eof = TRUE;
+ 			}
+ 		} else {
+ 			status = g_strdup_printf(_("Couldn't look up host %s"), chost);
+@@ -411,74 +429,10 @@ static void *http_buffer_loop(void *arg)
+ 			mpg123_ip.set_info_text(NULL);
+ 			eof = TRUE;
+ 		}
+-#else
+-		sock = socket(AF_INET, SOCK_STREAM, 0);
+-		fcntl(sock, F_SETFL, O_NONBLOCK);
+-		address.sin_family = AF_INET;
+-
+-		status = g_strdup_printf(_("LOOKING UP %s"), chost);
+-		mpg123_ip.set_info_text(status);
+-		g_free(status);
+-
+-		if (!(hp = gethostbyname(chost)))
+-		{
+-			status = g_strdup_printf(_("Couldn't look up host %s"), chost);
+-			show_error_message(status);
+-			g_free(status);
+-
+-			mpg123_ip.set_info_text(NULL);
+-			eof = TRUE;
+-		}
+-#endif
+ 
+ 		if (!eof)
+ 		{
+-#ifndef USE_IPV6
+-			memcpy(&address.sin_addr.s_addr, *(hp->h_addr_list), sizeof (address.sin_addr.s_addr));
+-			address.sin_port = g_htons(cport);
+-
+-			status = g_strdup_printf(_("CONNECTING TO %s:%d"), chost, cport);
+-			mpg123_ip.set_info_text(status);
+-			g_free(status);
+-			if (connect(sock, (struct sockaddr *) &address, sizeof (struct sockaddr_in)) == -1)
+-			{
+-				if (errno != EINPROGRESS)
+-				{
+-					status = g_strdup_printf(_("Couldn't connect to host %s"), chost);
+-					show_error_message(status);
+-					g_free(status);
+-
+-					mpg123_ip.set_info_text(NULL);
+-					eof = TRUE;
+-				}
+-			}
+-#endif
+-			while (going)
+-			{
+-				tv.tv_sec = 0;
+-				tv.tv_usec = 10000;
+-				FD_ZERO(&set);
+-				FD_SET(sock, &set);
+-				if (select(sock + 1, NULL, &set, NULL, &tv) > 0)
+-				{
+-					err_len = sizeof (error);
+-					getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &err_len);
+-					if (error)
+-					{
+-						status = g_strdup_printf(_("Couldn't connect to host %s"),
+-									 chost);
+-						show_error_message(status);
+-						g_free(status);
+-
+-						mpg123_ip.set_info_text(NULL);
+-						eof = TRUE;
+-						
+-					}
+-					break;
+-				}
+-			}
+-			if (!eof)
+-			{
++			{ /* TODO: cleanup whitespace */
+ 				gchar *auth = NULL, *proxy_auth = NULL;
+ 				gchar udpspace[30];
+ 				int udp_port;
+diff -p -up xmms-1.2.11/Input/vorbis/http.c.ipv6merge xmms-1.2.11/Input/vorbis/http.c
+--- xmms-1.2.11/Input/vorbis/http.c.ipv6merge	2009-02-26 09:59:20.000000000 +0100
++++ xmms-1.2.11/Input/vorbis/http.c	2009-02-26 09:59:20.000000000 +0100
+@@ -300,13 +300,8 @@ static void *http_buffer_loop(void *arg)
+ 	socklen_t err_len;
+ 	gboolean redirect;
+ 	fd_set set;
+-#ifdef USE_IPV6
+ 	struct addrinfo hints, *res, *res0;
+ 	char service[6];
+-#else
+-	struct hostent *hp;
+-	struct sockaddr_in address;
+-#endif
+ 	struct timeval tv;
+ 
+ 	url = (gchar *) arg;
+@@ -328,12 +323,12 @@ static void *http_buffer_loop(void *arg)
+ 		chost = vorbis_cfg.use_proxy ? vorbis_cfg.proxy_host : host;
+ 		cport = vorbis_cfg.use_proxy ? vorbis_cfg.proxy_port : port;
+ 
+-#ifdef USE_IPV6
+ 		g_snprintf(service, 6, "%d", cport);
+ 		memset(&hints, 0, sizeof(hints));
+ 		hints.ai_socktype = SOCK_STREAM;
++		hints.ai_family = PF_UNSPEC;
+ 		if (! getaddrinfo(chost, service, &hints, &res0)) {
+-			eof = TRUE;
++			int connected = 0;
+ 			for (res = res0; res; res = res->ai_next) {
+ 				if ((sock = socket (res->ai_family, res->ai_socktype, res->ai_protocol)) < 0)
+ 					continue;
+@@ -347,12 +342,32 @@ static void *http_buffer_loop(void *arg)
+ 						close(sock);
+ 						continue;
+ 					}
++					/* We are EINPROGRESS. We need to wait here until we are connected as otherwise we
++					* will never get to other addresses.
++					*/
++					while (going) {
++						fd_set set;
++						FD_ZERO(&set);
++						FD_SET(sock, &set);
++
++						tv.tv_sec = 0;
++						tv.tv_usec = 10000;
++						if (select(sock + 1, NULL, &set, NULL, &tv) > 0) {
++							err_len = sizeof (error);
++							getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &err_len);
++							if (error == 0)
++								connected = 1;
++							break;
++						}
++						else if( errno == EBADF || error == ENOMEM )
++							break; /* Select failures - break to avoid possible infinite loop */
++					}
+ 				}
+-				eof = FALSE;
+-				break;
++				if(connected)
++					break;
+ 			}
+ 			freeaddrinfo(res0);
+-			if (eof) {
++			if (!connected) {
+ 				status = g_strdup_printf(_("Couldn't connect to host %s:%d"), chost, cport);
+ 				vorbis_ip.set_info_text(status);
+ 				g_free(status);
+@@ -365,74 +380,10 @@ static void *http_buffer_loop(void *arg)
+ 			g_free(status);
+ 			eof = TRUE;
+ 		}
+-#else
+-		sock = socket(AF_INET, SOCK_STREAM, 0);
+-		fcntl(sock, F_SETFL, O_NONBLOCK);
+-		address.sin_family = AF_INET;
+-
+-		status = g_strdup_printf(_("LOOKING UP %s"), chost);
+-		vorbis_ip.set_info_text(status);
+-		g_free(status);
+-
+-		if (!(hp = gethostbyname(chost)))
+-		{
+-			status = g_strdup_printf(_("Couldn't look up host %s"), chost);
+-			show_error_message(status);
+-			g_free(status);
+-
+-			vorbis_ip.set_info_text(NULL);
+-			eof = TRUE;
+-		}
+-#endif
+ 
+ 		if (!eof)
+ 		{
+-#ifndef USE_IPV6
+-			memcpy(&address.sin_addr.s_addr, *(hp->h_addr_list), sizeof (address.sin_addr.s_addr));
+-			address.sin_port = g_htons(cport);
+-
+-			status = g_strdup_printf(_("CONNECTING TO %s:%d"), chost, cport);
+-			vorbis_ip.set_info_text(status);
+-			g_free(status);
+-			if (connect(sock, (struct sockaddr *) &address, sizeof (struct sockaddr_in)) == -1)
+-			{
+-				if (errno != EINPROGRESS)
+-				{
+-					status = g_strdup_printf(_("Couldn't connect to host %s"), chost);
+-					show_error_message(status);
+-					g_free(status);
+-
+-					vorbis_ip.set_info_text(NULL);
+-					eof = TRUE;
+-				}
+-			}
+-#endif
+-			while (going)
+-			{
+-				tv.tv_sec = 0;
+-				tv.tv_usec = 10000;
+-				FD_ZERO(&set);
+-				FD_SET(sock, &set);
+-				if (select(sock + 1, NULL, &set, NULL, &tv) > 0)
+-				{
+-					err_len = sizeof (error);
+-					getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &err_len);
+-					if (error)
+-					{
+-						status = g_strdup_printf(_("Couldn't connect to host %s"),
+-									 chost);
+-						show_error_message(status);
+-						g_free(status);
+-
+-						vorbis_ip.set_info_text(NULL);
+-						eof = TRUE;
+-						
+-					}
+-					break;
+-				}
+-			}
+-			if (!eof)
+-			{
++			{ /* TODO: Cleanup whitespace */
+ 				gchar *auth = NULL, *proxy_auth = NULL;
+ 
+ 				if(user && pass)

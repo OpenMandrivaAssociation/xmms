@@ -1,0 +1,13 @@
+diff -p -up xmms-1.2.11/Output/OSS/audio.c.fix-smallfiles xmms-1.2.11/Output/OSS/audio.c
+--- xmms-1.2.11/Output/OSS/audio.c.fix-smallfiles	2009-02-26 09:50:44.000000000 +0100
++++ xmms-1.2.11/Output/OSS/audio.c	2009-02-26 09:50:44.000000000 +0100
+@@ -459,6 +459,9 @@ void oss_write(gpointer ptr, int length)
+ 			length -= cnt;
+ 			off += cnt;
+ 		}
++               // eliminate hang in oss_loop when size of file<prebuffer_size
++                if(prebuffer_size > off)
++                  prebuffer_size = off;
+ 	}
+ 	else
+ 	{

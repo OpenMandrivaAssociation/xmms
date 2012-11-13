@@ -1,0 +1,10 @@
+diff -p -up xmms-1.2.11/xmms/textbox.h.fix-textbox xmms-1.2.11/xmms/textbox.h
+--- xmms-1.2.11/xmms/textbox.h.fix-textbox	2001-08-19 21:10:55.000000000 +0200
++++ xmms-1.2.11/xmms/textbox.h	2009-02-26 09:52:04.000000000 +0100
+@@ -45,5 +45,6 @@ void textbox_set_scroll(TextBox * tb, gb
+ TextBox *create_textbox(GList ** wlist, GdkPixmap * parent, GdkGC * gc, gint x, gint y, gint w, gboolean allow_scroll, SkinIndex si);
+ void textbox_set_xfont(TextBox * tb, gboolean use_xfont, gchar *fontname);
+ void free_textbox(TextBox * tb);
++void config_textbox(TextBox *tb, gint y);
+ 
+ #endif

@@ -1,0 +1,132 @@
+--- Input/mpg123/http.c	2005-08-16 23:55:18.000000000 +0200
++++ Input/mpg123/http.c.new	2005-08-16 23:55:41.000000000 +0200
+@@ -720,23 +720,17 @@
+ /* Find a good local udp port and bind udp_sock to it, return the port */
+ static int udp_establish_listener(int *sock)
+ {
+-#ifdef USE_IPV6
+-	struct sockaddr_in6 sin;
+-	socklen_t sinlen = sizeof (struct sockaddr_in6);
+-#else
+-	struct sockaddr_in sin;
+-	socklen_t sinlen = sizeof (struct sockaddr_in);
+-#endif
++	struct sockaddr_storage ss;
++	char hostname[INET6_ADDRSTRLEN], port_s[10];
++	int res, sockfd, port;
++	unsigned int ss_len;
+ 	
+ #ifdef DEBUG_UDP
+ 	fprintf (stderr,"Establishing udp listener\n");
+ #endif
+ 	
+-#ifdef USE_IPV6
+-	if ((*sock = socket(AF_INET6, SOCK_DGRAM, 0)) < 0)
+-#else
+-	if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+-#endif
++	if ((*sock = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) 
++	if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+ 	{
+ 		g_log(NULL, G_LOG_LEVEL_CRITICAL,
+ 		      "udp_establish_listener(): unable to create socket: %s",
+@@ -744,21 +738,15 @@
+ 		return -1;
+ 	}
+ 
+-	memset(&sin, 0, sinlen);
+-#ifdef USE_IPV6
+-	sin.sin6_family = AF_INET6;
+-#else
+-	sin.sin_family = AF_INET;
+-	sin.sin_addr.s_addr = g_htonl(INADDR_ANY);
+-#endif
+-			
+-	if (bind(*sock, (struct sockaddr *)&sin, sinlen) < 0)
++	ss_len = sizeof(struct sockaddr_storage);
++	if (bind(*sock, (struct sockaddr *)&ss, ss_len) < 0)
+ 	{
+ 		g_log(NULL, G_LOG_LEVEL_CRITICAL,
+ 		      "udp_establish_listener():  Failed to bind socket to localhost: %s", strerror(errno));
+ 		close(*sock);
+ 		return -1;
+ 	}
++	
+ 	if (fcntl(*sock, F_SETFL, O_NONBLOCK) < 0)
+ 	{
+ 		g_log(NULL, G_LOG_LEVEL_CRITICAL,
+@@ -767,8 +755,7 @@
+ 		return -1;
+ 	}
+ 
+-	memset(&sin, 0, sinlen);
+-	if (getsockname(*sock, (struct sockaddr *)&sin, &sinlen) < 0)
++	if (getsockname(*sock, (struct sockaddr *)&ss, &ss_len) < 0)
+ 	{
+ 		g_log(NULL, G_LOG_LEVEL_CRITICAL,
+ 		      "udp_establish_listener():  Failed to retrieve socket info: %s", strerror(errno));
+@@ -776,15 +763,21 @@
+ 		return -1;
+ 	}
+ 
++	if (getnameinfo((struct sockaddr *)&ss, ss_len, hostname, INET6_ADDRSTRLEN, port_s, 10, NI_NUMERICSERV|NI_NUMERICHOST) != 0)
++	{
++		g_log(NULL, G_LOG_LEVEL_CRITICAL,
++			"udp_establish_listener():  Failed to retrieve hostname and port : %s", strerror(errno));
++		close(*sock);
++		return -1;
++	}
++
++	port = atoi(port_s);
++
+ #ifdef DEBUG_UDP
+-	fprintf (stderr,"Listening on local %s:%d\n", inet_ntoa(sin.sin_addr), g_ntohs(sin.sin_port));
++	fprintf (stderr,"Listening on local %s:%d\n", hostname, port);
+ #endif
+ 	
+-#ifdef USE_IPV6
+-	return g_ntohs(sin.sin6_port);
+-#else
+-	return g_ntohs(sin.sin_port);
+-#endif
++	return port;
+ }
+ 
+ static int udp_check_for_data(int sock)
+@@ -793,11 +786,7 @@
+ 	char *valptr;
+ 	gchar *title;
+ 	gint len, i;
+-#ifdef USE_IPV6
+-	struct sockaddr_in6 from;
+-#else
+-	struct sockaddr_in from;
+-#endif
++	struct sockaddr_storage from;
+ 	socklen_t fromlen;
+ 
+ 	fromlen = sizeof(from);
+@@ -885,14 +874,16 @@
+ #ifdef DEBUG_UDP
+ 			else
+ 				fprintf(stderr,"Sent ack: %s", obuf);
+-#ifdef USE_IPV6
+ {
+-			char adr[INET6_ADDRSTRLEN];
+-			inet_ntop(AF_INET6, &from.sin6_addr, adr, INET6_ADDRSTRLEN);
+-			fprintf (stderr,"Remote: [%s]:%d\n", adr, g_ntohs(from.sin6_port));
+-#else
+-			fprintf (stderr,"Remote: %s:%d\n", inet_ntoa(from.sin_addr), g_ntohs(from.sin_port));
+-#endif
++	char hostname[INET6_ADDRSTRLEN], port[10];
++	if (getnameinfo((struct sockaddr *)&ss, ss_len, hostname, 256, port, 10, NI_NUMERICSERV|NI_NUMERICHOST) != 0)
++	{
++		g_log(NULL, G_LOG_LEVEL_WARNING,
++			"udp_check_for_data():  Failed to retrieve address and port : %s", strerror(errno));
++	}
++       	else
++		fprintf (stderr,"Remote: [%s]:%s\n", hostname, port);
++}
+ #endif
+ 		}
+ 	}

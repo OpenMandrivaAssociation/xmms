@@ -1,0 +1,12 @@
+diff -p -up xmms-1.2.11/xmms/playlist.c.recode xmms-1.2.11/xmms/playlist.c
+--- xmms-1.2.11/xmms/playlist.c.recode	2007-11-16 22:51:30.000000000 +0100
++++ xmms-1.2.11/xmms/playlist.c	2009-02-26 09:58:16.000000000 +0100
+@@ -1394,7 +1394,7 @@ char * playlist_get_songtitle(int pos)
+ 
+ 	filename = g_strdup(entry->filename);
+ 	
+-	if (entry->title == NULL && entry->length == -1)
++	if (entry->title == NULL)
+ 	{
+ 		if (playlist_get_info_entry(entry))
+ 			title = g_strdup(entry->title);

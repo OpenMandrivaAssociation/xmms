@@ -1,0 +1,59 @@
+--- ./sox-effect-0.0.1/src/Makefile.am.gege	Mon Nov 22 16:16:16 1999
++++ ./sox-effect-0.0.1/src/Makefile.am	Wed Mar 20 23:54:46 2002
+@@ -5,7 +5,7 @@
+ libsox_la_LDFLAGS = -module -avoid-version
+ LIBS = @GTK_LIBS@ @PTHREAD_LIBS@
+ 
+-COMMON_CFLAGS = -O2 -I$(top_builddir) -I$(top_srcdir) -D_REENTRANT @GTK_CFLAGS@
++COMMON_CFLAGS = -O2 -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/.. -D_REENTRANT @GTK_CFLAGS@
+ COMMON_SRC = sox.c sox_configure.c avg.c band.c chorus.c copy.c cut.c deemphas.c dyn.c echo.c echos.c flanger.c highp.c lowp.c map.c mask.c phaser.c pick.c polyphas.c rate.c resample.c reverb.c reverse.c split.c stat.c swap.c vibro.c libst.c handlers.c misc.c util.c libst.h resampl.h sox.h version.h patchlvl.h resdefs.h st.h
+ 
+ CFLAGS = $(COMMON_CFLAGS)
+--- ./sox-effect-0.0.1/src/sox.h.gege	Mon Nov 22 15:27:40 1999
++++ ./sox-effect-0.0.1/src/sox.h	Wed Mar 20 23:54:57 2002
+@@ -1,7 +1,7 @@
+ #ifndef _SRC_SOX_H
+ #define _SRC_SOX_H 1
+ 
+-#include "xmms/configfile.h"
++#include "libxmms/configfile.h"
+ 
+ struct _configs {
+ 	char *name;
+@@ -21,4 +21,4 @@
+ 
+ extern struct _sox_cfg sox_cfg;
+ 
+-#endif
+\ No newline at end of file
++#endif
+--- ./sox-effect-0.0.1/src/sox_configure.c.gege	Tue Nov 23 18:25:09 1999
++++ ./sox-effect-0.0.1/src/sox_configure.c	Wed Mar 20 23:56:14 2002
+@@ -1,6 +1,6 @@
+ 
+ #include <gtk/gtk.h>
+-#include "xmms/configfile.h"
++#include "libxmms/configfile.h"
+ #include "sox.h"
+ 
+ extern int sox_restart_effect;
+--- ./sox-effect-0.0.1/configure.in.gege	Wed Mar 20 23:45:51 2002
++++ ./sox-effect-0.0.1/configure.in	Wed Mar 20 23:49:41 2002
+@@ -11,12 +11,12 @@
+ dnl Checks for programs.
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-AC_PATH_PROG(XMMS_PATH,xmms,no)
++dnl AC_PATH_PROG(XMMS_PATH,xmms,no)
+ 
+-if test "x$XMMS_PATH" = "xno"; then
+-	echo "XMMS does not appear to be installed."
+-	exit 1
+-fi
++dnl if test "x$XMMS_PATH" = "xno"; then
++dnl	echo "XMMS does not appear to be installed."
++dnl	exit 1
++dnl fi
+ 
+ dnl Checks for libraries.
+ AM_PATH_GLIB(1.2.2,,AC_MSG_ERROR([*** GLIB >= 1.2.2 not installed - please install first ***]))

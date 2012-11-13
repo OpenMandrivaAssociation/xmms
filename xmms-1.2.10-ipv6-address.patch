@@ -1,0 +1,43 @@
+--- Input/mpg123/http.c.ORIG	2005-05-15 02:33:40.000000000 +0300
++++ Input/mpg123/http.c	2005-07-30 17:02:27.751755944 +0300
+@@ -149,6 +149,18 @@
+ 		*pass = NULL;
+ 		h = ptr;
+ 	}
++
++	if (*ptr == '[')
++	{
++		pt = strchr(ptr + 1, ']');
++		if (pt != NULL && (f == NULL || pt < f))
++		{
++			*pt = '\0';
++			h++;
++			ptr = pt + 1;
++		}
++	}
++
+ 	pt = strchr(ptr, ':');
+ 	if (pt != NULL && (f == NULL || pt < f))
+ 	{
+--- Input/vorbis/http.c.ORIG	2005-05-15 02:33:40.000000000 +0300
++++ Input/vorbis/http.c	2005-07-30 17:16:49.576738632 +0300
+@@ -149,6 +149,18 @@
+ 		*pass = NULL;
+ 		h = ptr;
+ 	}
++
++	if (*ptr == '[')
++	{
++		pt = strchr(ptr + 1, ']');
++		if (pt != NULL && (f == NULL || pt < f))
++		{
++			*pt = '\0';
++			h++;
++			ptr = pt + 1;
++		}
++	}
++
+ 	pt = strchr(ptr, ':');
+ 	if (pt != NULL && (f == NULL || pt < f))
+ 	{
+

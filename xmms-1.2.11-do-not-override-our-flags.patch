@@ -1,0 +1,48 @@
+diff -p -up xmms-1.2.11/configure.in.do-not-override-our-flags xmms-1.2.11/configure.in
+--- xmms-1.2.11/configure.in.do-not-override-our-flags	2007-11-16 22:52:30.000000000 +0100
++++ xmms-1.2.11/configure.in	2009-02-26 09:54:28.000000000 +0100
+@@ -507,25 +507,25 @@ AM_CONDITIONAL([HAVE_LINUX_JOYSTICK],[te
+ 
+ AC_CHECK_SIZEOF([long])
+ 
+-if test -n "$GCC"
+-then
+-  CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions"
+-  case "$CFLAGS" in
+-    -g*) ;;
+-    *\ -g*) ;;
+-    *) CFLAGS="$CFLAGS -fomit-frame-pointer" ;;
+-  esac
+-  case "$host" in
+-    alpha*-*-freebsd*)
+-	;;
+-    *-*-freebsd*)
+-	CFLAGS="$CFLAGS -ffast-math"
+-	;;
+-    *)
+-	CFLAGS="$CFLAGS -ffast-math -funroll-all-loops"
+-	;;
+-  esac
+-fi
++dnl if test -n "$GCC"
++dnl then
++dnl   CFLAGS="$CFLAGS -Wall -Wpointer-arith -finline-functions"
++dnl   case "$CFLAGS" in
++dnl     -g*) ;;
++dnl     *\ -g*) ;;
++dnl     *) CFLAGS="$CFLAGS -fomit-frame-pointer" ;;
++dnl   esac
++dnl   case "$host" in
++dnl     alpha*-*-freebsd*)
++dnl 	;;
++dnl     *-*-freebsd*)
++dnl 	CFLAGS="$CFLAGS -ffast-math"
++dnl 	;;
++dnl     *)
++dnl 	CFLAGS="$CFLAGS -ffast-math -funroll-all-loops"
++dnl 	;;
++dnl   esac
++dnl fi
+ 
+ AC_MSG_CHECKING([if __ELF__ is defined])
+ AC_EGREP_CPP([yes],

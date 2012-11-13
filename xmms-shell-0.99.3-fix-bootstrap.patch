@@ -1,0 +1,35 @@
+diff -p -up xmms-shell-0.99.3/configure.in.fix-bootstrap xmms-shell-0.99.3/configure.in
+--- xmms-shell-0.99.3/configure.in.fix-bootstrap	2009-02-26 09:49:12.000000000 +0100
++++ xmms-shell-0.99.3/configure.in	2009-02-26 09:49:12.000000000 +0100
+@@ -3,7 +3,7 @@ AC_INIT(Makefile.in)
+ AM_INIT_AUTOMAKE(xmms-shell, 0.99.3)
+ AM_CONFIG_HEADER(include/config.h)
+ 
+-AC_CHECK_PROG(XMMS_CONFIG, xmms-config, yes, no)
++AC_CHECK_PROG(XMMS_CONFIG, ../xmms-config, yes, no)
+ 
+ if test x$XMMS_CONFIG = xno
+  then
+@@ -11,17 +11,17 @@ if test x$XMMS_CONFIG = xno
+  fi
+ 
+ AC_MSG_CHECKING("XMMS version")
+-XMMS_VERSION=`xmms-config --version`
++XMMS_VERSION=`../xmms-config --version`
+ AC_MSG_RESULT($XMMS_VERSION)
+ 
+ AC_MSG_CHECKING("XMMS libs")
+-XMMS_LIBS=`xmms-config --libs`
+-LIBS="$LIBS $XMMS_LIBS"
++XMMS_LIBS=`../xmms-config --libs | perl -pi -e 's|-L/usr/lib\b||'`
++LIBS="$LIBS $XMMS_LIBS -L../libxmms/.libs -L../../libxmms/.libs"
+ AC_MSG_RESULT(yes)
+ 
+ AC_MSG_CHECKING("XMMS cflags")
+-XMMS_CFLAGS=`xmms-config --cflags`
+-CXXFLAGS="$CXXFLAGS $XMMS_CFLAGS"
++XMMS_CFLAGS=`../xmms-config --cflags`
++CXXFLAGS="$CXXFLAGS $XMMS_CFLAGS -I../../xmms -I../../libxmms"
+ AC_MSG_RESULT(yes)
+ 
+ with_readline=yes

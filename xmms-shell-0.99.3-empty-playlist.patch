@@ -1,0 +1,15 @@
+--- xmms-shell-0.99.3/src/script.cc	2002-10-23 01:59:52.000000000 +0200
++++ xmms-shell-0.99.3/src/script.cc.new	2002-10-23 23:43:42.000000000 +0200
+@@ -124,8 +124,10 @@
+         Playlist playlist = session.playlist();
+ 
+         associate('i', int_to_string(playlist.position()));
+-        associate('F', playlist.current_filename());
+-        associate('S', playlist.current_title());
++        if (playlist.length()) {
++	  associate('F', playlist.current_filename());
++	  associate('S', playlist.current_title());
++	}
+         associate('N', int_to_string(playlist.length()));
+     } else {
+         associate('R', "not running");

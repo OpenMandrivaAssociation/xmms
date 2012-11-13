@@ -1,0 +1,40 @@
+--- xmms-shell-0.99.3/configure.in.bak	2004-07-12 13:47:23.889737176 +0200
++++ xmms-shell-0.99.3/configure.in	2004-07-12 14:17:58.174513465 +0200
+@@ -3,6 +3,18 @@
+ AM_INIT_AUTOMAKE(xmms-shell, 0.99.3)
+ AM_CONFIG_HEADER(include/config.h)
+ 
++with_readline=yes
++AC_ARG_WITH(readline,
++            [  --with-readline         support fancy command line editing])
++AC_CHECK_LIB(ncurses, tgetnum)
++
++if test x$with_readline = xyes
++ then
++  AC_CHECK_LIB(readline, readline)
++ fi
++
++AC_PROG_CXX
++
+ AC_CHECK_PROG(XMMS_CONFIG, ../xmms-config, yes, no)
+ 
+ if test x$XMMS_CONFIG = xno
+@@ -24,18 +36,6 @@
+ CXXFLAGS="$CXXFLAGS $XMMS_CFLAGS -I../../xmms -I../../libxmms"
+ AC_MSG_RESULT(yes)
+ 
+-with_readline=yes
+-AC_ARG_WITH(readline,
+-            [  --with-readline         support fancy command line editing])
+-AC_CHECK_LIB(ncurses, tgetnum)
+-
+-if test x$with_readline = xyes
+- then
+-  AC_CHECK_LIB(readline, readline)
+- fi
+-
+-AC_PROG_CXX
+-
+ AC_CHECK_LIB(xmms, xmms_remote_play)
+ AC_CHECK_FUNCS(xmms_remote_is_repeat)
+ AC_CHECK_FUNCS(xmms_remote_is_shuffle)

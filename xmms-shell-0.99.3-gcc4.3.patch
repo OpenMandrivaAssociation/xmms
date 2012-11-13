@@ -1,0 +1,87 @@
+--- xmms-shell-0.99.3/src/command.cc~	2002-10-19 15:10:52.000000000 +0200
++++ xmms-shell-0.99.3/src/command.cc	2008-08-14 13:25:19.000000000 +0200
+@@ -1,6 +1,7 @@
+ #include "config.h"
+ #include "command.h"
+ #include <algorithm>
++#include <cstring>
+ 
+ static vector<CommandReference> commands;
+ 
+diff -p -up xmms-shell-0.99.3/src/eval.cc~ xmms-shell-0.99.3/src/eval.cc
+--- xmms-shell-0.99.3/src/eval.cc~	2002-10-21 23:02:47.000000000 +0200
++++ xmms-shell-0.99.3/src/eval.cc	2008-08-14 13:25:42.000000000 +0200
+@@ -2,6 +2,7 @@
+ #include "eval.h"
+ #include "command.h"
+ #include <stdio.h>
++#include <cstring>
+ #include <cctype>
+ #include <glib.h>
+ 
+diff -p -up xmms-shell-0.99.3/src/general.cc~ xmms-shell-0.99.3/src/general.cc
+--- xmms-shell-0.99.3/src/general.cc~	2002-10-20 22:24:28.000000000 +0200
++++ xmms-shell-0.99.3/src/general.cc	2008-08-14 13:26:42.000000000 +0200
+@@ -3,6 +3,8 @@
+ #include <map>
+ #include <set>
+ #include <cctype>
++#include <cstring>
++#include <cstdlib>
+ #include "config.h"
+ #include "command.h"
+ #include "output.h"
+diff -p -up xmms-shell-0.99.3/src/getline.cc~ xmms-shell-0.99.3/src/getline.cc
+--- xmms-shell-0.99.3/src/getline.cc~	2008-08-14 13:11:06.000000000 +0200
++++ xmms-shell-0.99.3/src/getline.cc	2008-08-14 13:27:21.000000000 +0200
+@@ -10,6 +10,7 @@
+ #include <readline/history.h>
+ #include "command.h"
+ #include <string>
++#include <cstring>
+ 
+ typedef char *(*CompletionHelper)(char **argv, int arg, int state);
+ 
+diff -p -up xmms-shell-0.99.3/src/misc.cc~ xmms-shell-0.99.3/src/misc.cc
+--- xmms-shell-0.99.3/src/misc.cc~	2002-10-23 01:54:38.000000000 +0200
++++ xmms-shell-0.99.3/src/misc.cc	2008-08-14 13:27:57.000000000 +0200
+@@ -2,6 +2,8 @@
+ #include <unistd.h>
+ #include <errno.h>
+ #include <cctype>
++#include <cstring>
++#include <cstdlib>
+ #include <xmmsctrl.h>
+ #include "command.h"
+ 
+diff -p -up xmms-shell-0.99.3/src/playback.cc~ xmms-shell-0.99.3/src/playback.cc
+--- xmms-shell-0.99.3/src/playback.cc~	2002-10-20 22:46:51.000000000 +0200
++++ xmms-shell-0.99.3/src/playback.cc	2008-08-14 13:28:25.000000000 +0200
+@@ -1,5 +1,6 @@
+ #include <stdio.h>
+ #include <xmmsctrl.h>
++#include <cstring>
+ #include "config.h"
+ #include "command.h"
+ 
+diff -p -up xmms-shell-0.99.3/src/playlist.cc~ xmms-shell-0.99.3/src/playlist.cc
+--- xmms-shell-0.99.3/src/playlist.cc~	2002-10-23 01:49:10.000000000 +0200
++++ xmms-shell-0.99.3/src/playlist.cc	2008-08-14 13:28:41.000000000 +0200
+@@ -4,6 +4,7 @@
+ #include <unistd.h>
+ #include <time.h>
+ #include <cctype>
++#include <cstring>
+ #include <xmmsctrl.h>
+ #include "config.h"
+ #include "command.h"
+diff -p -up xmms-shell-0.99.3/src/window.cc~ xmms-shell-0.99.3/src/window.cc
+--- xmms-shell-0.99.3/src/window.cc~	2002-10-23 02:05:19.000000000 +0200
++++ xmms-shell-0.99.3/src/window.cc	2008-08-14 13:30:58.000000000 +0200
+@@ -1,5 +1,6 @@
+ #include <stdio.h>
+ #include <xmmsctrl.h>
++#include <cstring>
+ #include "config.h"
+ #include "command.h"
+ #include "window.h"

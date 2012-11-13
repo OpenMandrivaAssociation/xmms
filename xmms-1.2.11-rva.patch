@@ -1,0 +1,816 @@
+--- xmms-1.2.11/Input/mpg123/configure.c.rva	2005-05-15 02:01:19.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/configure.c	2007-11-18 21:01:37.000000000 +0100
+@@ -27,6 +27,10 @@ static GtkWidget *streaming_cast_title, 
+ static GtkWidget *streaming_proxy_hbox, *streaming_proxy_auth_hbox, *streaming_save_dirbrowser;
+ static GtkWidget *streaming_save_hbox, *title_id3_box, *title_tag_desc;
+ static GtkWidget *title_override, *title_id3_entry, *title_id3v2_disable;
++static GtkWidget *volume_rva2_enable, *volume_boost_enable, *volume_dither_enable;
++static GtkWidget *volume_gain_label, *volume_clip_frame;
++static GtkWidget *volume_limiter_enable, *volume_reducegain_enable;
++static gchar volume_gaintext[24];
+ 
+ MPG123Config mpg123_cfg;
+ 
+@@ -105,6 +109,14 @@ static void mpg123_configurewin_ok(GtkWi
+ 	mpg123_cfg.disable_id3v2 = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(title_id3v2_disable));
+ 	g_free(mpg123_cfg.id3_format);
+ 	mpg123_cfg.id3_format = g_strdup(gtk_entry_get_text(GTK_ENTRY(title_id3_entry)));
++	mpg123_cfg.use_rva2 = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(volume_rva2_enable));
++	mpg123_cfg.use_boost = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(volume_boost_enable));
++	mpg123_cfg.enable_dither = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(volume_dither_enable));
++	if (GTK_TOGGLE_BUTTON(volume_limiter_enable)->active)
++		mpg123_cfg.anticlip_mode = 0;
++	else if (GTK_TOGGLE_BUTTON(volume_reducegain_enable)->active)
++		mpg123_cfg.anticlip_mode = 1;
++	mpg123_voladjust_update(NULL);
+ 
+ 	filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
+ 	cfg = xmms_cfg_open_file(filename);
+@@ -135,6 +147,10 @@ static void mpg123_configurewin_ok(GtkWi
+ 	xmms_cfg_write_boolean(cfg, "MPG123", "disable_id3v2", mpg123_cfg.disable_id3v2);
+ 	xmms_cfg_write_string(cfg, "MPG123", "id3_format", mpg123_cfg.id3_format);
+ 	xmms_cfg_write_int(cfg, "MPG123", "detect_by", mpg123_cfg.detect_by);
++ 	xmms_cfg_write_boolean(cfg, "MPG123", "use_rva2", mpg123_cfg.use_rva2);
++ 	xmms_cfg_write_boolean(cfg, "MPG123", "use_boost", mpg123_cfg.use_boost);
++ 	xmms_cfg_write_boolean(cfg, "MPG123", "enable_dither", mpg123_cfg.enable_dither);
++ 	xmms_cfg_write_int(cfg, "MPG123", "anticlip_mode", mpg123_cfg.anticlip_mode);
+ #ifdef USE_SIMD
+ 	xmms_cfg_write_int(cfg, "MPG123", "default_synth", mpg123_cfg.default_synth);
+ #endif
+@@ -212,6 +228,16 @@ static void title_override_cb(GtkWidget 
+ 	gtk_widget_set_sensitive(title_tag_desc, override);
+ }
+ 
++static void volume_rva2_cb(GtkWidget * w, gpointer data)
++{
++	gboolean rva2_on;
++	rva2_on = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(volume_rva2_enable));
++	gtk_widget_set_sensitive(volume_boost_enable, rva2_on);
++	gtk_widget_set_sensitive(volume_dither_enable, rva2_on);
++	gtk_widget_set_sensitive(volume_clip_frame, rva2_on);
++	gtk_widget_set_sensitive(volume_gain_label, rva2_on);
++}
++
+ static void configure_destroy(GtkWidget * w, gpointer data)
+ {
+ 	if (streaming_save_dirbrowser)
+@@ -230,6 +256,7 @@ void mpg123_configure(void)
+ 	GtkWidget *streaming_save_label, *streaming_save_browse;
+ 	GtkWidget *streaming_cast_frame, *streaming_cast_vbox;
+ 	GtkWidget *title_frame, *title_id3_vbox, *title_id3_label;
++	GtkWidget *volume_frame, *volume_vbox, *volume_clip_vbox;
+ 	GtkWidget *bbox, *ok, *cancel;
+ 
+ 	char *temp;
+@@ -578,6 +605,67 @@ void mpg123_configure(void)
+ 	gtk_box_pack_start(GTK_BOX(title_id3_vbox), title_tag_desc, FALSE, FALSE, 0);
+ 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), title_frame, gtk_label_new(_("Title")));
+ 
++	/*
++	 * Volume adjustment config
++	 */
++	volume_frame = gtk_frame_new(_("Volume Adjustment:"));
++	gtk_container_border_width(GTK_CONTAINER(volume_frame), 5);
++
++	volume_vbox = gtk_vbox_new(FALSE, 10);
++	gtk_container_border_width(GTK_CONTAINER(volume_vbox), 5);
++	gtk_container_add(GTK_CONTAINER(volume_frame), volume_vbox);
++
++	volume_rva2_enable = gtk_check_button_new_with_label(_("Enable ID3 relative volume adjust"));
++	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(volume_rva2_enable),
++				     mpg123_cfg.use_rva2);
++	gtk_signal_connect(GTK_OBJECT(volume_rva2_enable), "clicked", volume_rva2_cb, NULL);
++	gtk_box_pack_start(GTK_BOX(volume_vbox), volume_rva2_enable, FALSE, FALSE, 0);
++
++	volume_boost_enable = gtk_check_button_new_with_label(_("Enable 6dB boost"));
++	gtk_widget_set_sensitive(volume_boost_enable, mpg123_cfg.use_rva2);
++	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(volume_boost_enable),
++				     mpg123_cfg.use_boost);
++	gtk_box_pack_start(GTK_BOX(volume_vbox), volume_boost_enable, FALSE, FALSE, 0);
++
++	volume_dither_enable = gtk_check_button_new_with_label(_("Enable dithering"));
++	gtk_widget_set_sensitive(volume_dither_enable, mpg123_cfg.use_rva2);
++	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(volume_dither_enable),
++				     mpg123_cfg.enable_dither);
++	gtk_box_pack_start(GTK_BOX(volume_vbox), volume_dither_enable, FALSE, FALSE, 0);
++
++	volume_clip_frame = gtk_frame_new(_("Clipping Prevention:"));
++	gtk_widget_set_sensitive(volume_clip_frame, mpg123_cfg.use_rva2);
++	gtk_container_border_width(GTK_CONTAINER(volume_clip_frame), 5);
++
++	volume_clip_vbox = gtk_vbox_new(FALSE, 10);
++	gtk_container_border_width(GTK_CONTAINER(volume_clip_vbox), 5);
++	gtk_container_add(GTK_CONTAINER(volume_clip_frame), volume_clip_vbox);
++
++	volume_limiter_enable = gtk_radio_button_new_with_label(NULL, _("Use limiter"));
++	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(volume_limiter_enable),
++				     mpg123_cfg.anticlip_mode == 0);
++	gtk_box_pack_start(GTK_BOX(volume_clip_vbox), volume_limiter_enable, FALSE, FALSE, 0);
++
++	volume_reducegain_enable = gtk_radio_button_new_with_label(gtk_radio_button_group(GTK_RADIO_BUTTON(volume_limiter_enable)), _("Reduce gain"));
++	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(volume_reducegain_enable),
++				     mpg123_cfg.anticlip_mode == 1);
++	gtk_box_pack_start(GTK_BOX(volume_clip_vbox), volume_reducegain_enable, FALSE, FALSE, 0);
++
++	gtk_box_pack_start(GTK_BOX(volume_vbox), volume_clip_frame, FALSE, FALSE, 0);
++
++	if (fabs(mpg123_current_gain) < 0.0001)
++		strcpy(volume_gaintext, _("Current gain: none"));
++	else
++		g_snprintf(volume_gaintext, 24, _("Current gain: %0.2fdB"),
++			   mpg123_current_gain);
++	volume_gain_label = gtk_label_new(volume_gaintext);
++	gtk_widget_set_sensitive(volume_gain_label, mpg123_cfg.use_rva2);
++	gtk_box_pack_end(GTK_BOX(volume_vbox), volume_gain_label, FALSE, FALSE, 0);
++
++	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), volume_frame, gtk_label_new(_("Volume")));
++
++
++
+ 	bbox = gtk_hbutton_box_new();
+ 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_END);
+ 	gtk_button_box_set_spacing(GTK_BUTTON_BOX(bbox), 5);
+--- xmms-1.2.11/Input/mpg123/id3_frame_volume.c.rva	2007-11-18 21:01:37.000000000 +0100
++++ xmms-1.2.11/Input/mpg123/id3_frame_volume.c	2007-11-18 21:01:37.000000000 +0100
+@@ -0,0 +1,144 @@
++/*********************************************************************
++ * 
++ * Filename:      id3_frame_volume.c
++ * Description:   Code for handling ID3 relative volume adjust frames.
++ * Author:        Chris Vaill <cvaill@cs.columbia.edu>
++ * Created at:    Thu Sep 26 23:57:00 2002
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ * 
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ * 
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ * 
++ ********************************************************************/
++#include <stdio.h>
++#include <string.h>
++
++#include "id3.h"
++
++
++/* Assume buf points to the beginning of one channel's data in an RVA2
++ * frame.  Return the encoded gain, in decibels. */
++static float decode_rva2_gain(const char *buf)
++{
++    int gain_fp; /* fixed-point */
++
++    gain_fp = *(signed char *)(buf + 1) << 8; /* first byte of gain */
++    gain_fp |= *(unsigned char *)(buf + 2);   /* second byte of gain */
++
++    return gain_fp / 512.0;
++}
++
++
++/* Assume buf points to the beginning of one channel's peak data in an
++ * RVA2 frame (i.e. the fourth byte in the channel's data).  Return
++ * the encoded peak, shifted to be a 32-bit value. */
++static guint32 decode_rva2_peak(const unsigned char *buf)
++{
++    unsigned int peakbits = (unsigned int)*buf++;
++    int shift, peakbytes;
++    guint32 peak = 0;
++
++    /* fast path for the common case */
++    if (peakbits == 16)
++	return (buf[0] << 24) + (buf[1] << 16);
++
++    /*
++     * We only care about the high 32 bits, so we care about the first
++     * 5 bytes, because unfortunately, sizes that are not whole bytes
++     * are padded on the msb side.
++     *
++     * e.g. a 33 bit peak has its first 7 bits zeroed, followed by 1
++     * bit and four bytes of peak data.  We take the first four bytes
++     * and shift left by 7, giving us 25 bits total.  We then take the
++     * top 7 bits of the fifth byte to get our full 32 bits.
++     */
++    peakbytes = (peakbits + 7) >> 3;
++    if (peakbytes > 4)
++	peakbytes = 4;
++    shift = ((8 - (peakbits & 7)) & 7) + (4 - peakbytes) * 8;
++
++    /* get up to the first 4 bytes of the peak... */
++    for (; peakbytes; peakbytes--) {
++	peak <<= 8;
++	peak += (unsigned int)*buf++;
++    }
++
++    /* ...and shift, so the value is out of 32 bits... */
++    peak <<= shift;
++
++    /* ...and finally, add part of the fifth byte, if necessary */
++    if (peakbits > 32)
++	peak += (unsigned int)*buf >> (8 - shift);
++
++    return peak;
++}
++
++
++/*
++ * Function id3_get_rva2_gain (frame)
++ *
++ *    Get the gain and peak info, that is coded in the RVA2 frame, and
++ *    return it in the gn struct.  Return 0, or -1 on error.
++ */
++int id3_get_rva2_gain(id3_frame_t *frame, struct id3_gain *gn)
++{
++    const unsigned char *data;
++    float gain;
++    int i, chan, peakbytes;
++    guint32 peak;
++
++    /* Type check */
++    if (frame->fr_desc->fd_id != ID3_RVA2)
++	return -1;
++
++    /* Check if frame is compressed */
++    if (id3_decompress_frame(frame) == -1)
++	return -1;
++
++    /* init gains and peaks to 0 */
++    memset(gn, 0, sizeof(struct id3_gain));
++
++    data = (char *)frame->fr_data;
++
++    /* skip past identification string */
++    for (i = 0; i < frame->fr_size; i++)
++	if (data[i] == '\0')
++	    break;
++    if (i >= frame->fr_size)
++	return -1; /* ident string not terminated; bad frame data */
++
++    /* cycle through channel fields */
++    i++;
++    while (i + 3 < frame->fr_size) {
++
++	chan = data[i];
++
++	/* decode the gain for this channel */
++	gain = decode_rva2_gain(data + i);
++	i += 3;
++
++	/* decode the peak for this channel */
++	peakbytes = (data[i] + 7) / 8;
++	if (i + peakbytes >= frame->fr_size)
++	    break;
++	peak = decode_rva2_peak(data + i);
++	i += 1 + peakbytes;
++
++	if (chan <= 8) {
++	    gn->channel[chan].ch_gain = gain;
++	    gn->channel[chan].ch_peak = peak;
++	}
++    }
++
++    return 0;
++}
+--- xmms-1.2.11/Input/mpg123/id3.h.rva	2005-05-21 20:05:56.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/id3.h	2007-11-18 21:01:37.000000000 +0100
+@@ -94,6 +94,8 @@ struct id3_tag {
+ 	GList *id3_frame;
+ };
+ 
++typedef struct id3_tag id3_t;
++
+ #define ID3_TYPE_NONE	0
+ #define ID3_TYPE_MEM	1
+ #define ID3_TYPE_FD	2
+@@ -121,6 +123,7 @@ struct id3_frame {
+ 	guint fr_size_z;	/* Size of decompressed compressed frame */
+ };
+ 
++typedef struct id3_frame id3_frame_t;
+ 
+ /*
+  * Structure describing an ID3 frame type.
+@@ -133,6 +136,40 @@ struct id3_framedesc {
+ 
+ 
+ /*
++ * Structure describing volume adjustment info in an RVA2 frame.
++ */
++struct id3_gain {
++    struct {
++
++	/* gain in decibels */
++	float ch_gain;
++
++	/* We shift peak values to be 32 bits, e.g. a 17-bit peak is
++	 * left shifted 15 (the low 15 bits are padded with zero).
++	 * This way, we can always treat the peak as being out of 32
++	 * bits.  RVA2 peak values can be up to 255 bits, but the high
++	 * 32 bits should more than suffice for us. */
++	guint32 ch_peak;
++
++    } channel[9];
++};
++
++/*
++ * These are both RVA2 channel type numbers, and indexes into the
++ * channel element of struct id3_gain.
++ */
++#define ID3_CHANNEL_OTHER   0x00
++#define ID3_CHANNEL_MASTER  0x01
++#define ID3_CHANNEL_FRIGHT  0x02
++#define ID3_CHANNEL_FLEFT   0x03
++#define ID3_CHANNEL_BRIGHT  0x04
++#define ID3_CHANNEL_BLEFT   0x05
++#define ID3_CHANNEL_FCENTER 0x06
++#define ID3_CHANNEL_BCENTER 0x07
++#define ID3_CHANNEL_SUB     0x08
++
++
++/*
+  * Text encodings.
+  */
+ #define ID3_ENCODING_ISO_8859_1	0x00
+@@ -360,6 +397,9 @@ char *id3_get_content(struct id3_frame *
+ char *id3_get_url(struct id3_frame *);
+ char *id3_get_url_desc(struct id3_frame *);
+ 
++/* From id3_frame_volume.c */
++int id3_get_rva2_gain(id3_frame_t *, struct id3_gain *);
++
+ /* From id3_tag.c */
+ void id3_init_tag(struct id3_tag *id3);
+ int id3_read_tag(struct id3_tag *id3);
+--- xmms-1.2.11/Input/mpg123/layer1.c.rva	2000-08-02 13:47:50.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/layer1.c	2007-11-18 21:01:37.000000000 +0100
+@@ -176,7 +176,10 @@ int mpg123_do_layer1(struct frame *fr)
+ 			while (mpg123_ip.output->buffer_free() < mpg123_pcm_point && mpg123_info->going && mpg123_info->jump_to_time == -1)
+ 				xmms_usleep(10000);
+ 			if (mpg123_info->going && mpg123_info->jump_to_time == -1)
++			{
++				mpg123_voladjust(mpg123_pcm_sample, mpg123_pcm_point);
+ 				mpg123_ip.output->write_audio(mpg123_pcm_sample, mpg123_pcm_point);
++			}
+ 		}
+ 		mpg123_pcm_point = 0;
+ 	}
+--- xmms-1.2.11/Input/mpg123/layer2.c.rva	2003-05-19 23:22:06.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/layer2.c	2007-11-18 21:01:37.000000000 +0100
+@@ -330,7 +330,10 @@ int mpg123_do_layer2(struct frame *fr)
+ 		while (mpg123_ip.output->buffer_free() < mpg123_pcm_point && mpg123_info->going && mpg123_info->jump_to_time == -1)
+ 			xmms_usleep(10000);
+ 		if (mpg123_info->going && mpg123_info->jump_to_time == -1)
++		{
++			mpg123_voladjust(mpg123_pcm_sample, mpg123_pcm_point);
+ 			mpg123_ip.output->write_audio(mpg123_pcm_sample, mpg123_pcm_point);
++		}
+ 		
+ 
+ 	}
+--- xmms-1.2.11/Input/mpg123/layer3.c.rva	2003-05-19 23:22:06.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/layer3.c	2007-11-18 21:01:37.000000000 +0100
+@@ -1947,7 +1947,10 @@ int mpg123_do_layer3(struct frame *fr)
+ 			       mpg123_info->going && mpg123_info->jump_to_time == -1)
+ 				xmms_usleep(10000);
+ 			if (mpg123_info->going && mpg123_info->jump_to_time == -1)
++			{
++				mpg123_voladjust(mpg123_pcm_sample, mpg123_pcm_point);
+ 				mpg123_ip.output->write_audio(mpg123_pcm_sample, mpg123_pcm_point);
++			}
+ 		}
+ 		mpg123_pcm_point = 0;
+ 	}
+--- xmms-1.2.11/Input/mpg123/Makefile.am.rva	2004-04-04 10:54:27.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/Makefile.am	2007-11-18 21:05:28.000000000 +0100
+@@ -10,12 +10,12 @@ tabinit.c l2tables.h \
+ configure.c fileinfo.c \
+ decode_2to1.c decode_4to1.c \
+ layer1.c layer2.c layer3.c \
+-equalizer.c http.c \
++equalizer.c http.c voladjust.c \
+ huffman.h getbits.h \
+ dxhead.c dxhead.h \
+ id3.c id3.h \
+ id3_frame.c id3_frame_content.c id3_frame_text.c id3_frame_url.c \
+-id3_header.h id3_tag.c unicode.c
++id3_header.h id3_tag.c unicode.c id3_frame_volume.c
+ 
+ if ARCH_X86
+ 
+--- xmms-1.2.11/Input/mpg123/mpg123.c.rva	2006-07-25 05:18:51.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/mpg123.c	2007-11-18 21:01:37.000000000 +0100
+@@ -199,6 +199,10 @@ static void init(void)
+ 	if (!xmms_cfg_read_string(cfg, "MPG123", "id3_format", &mpg123_cfg.id3_format))
+ 		mpg123_cfg.id3_format = g_strdup("%p - %t");
+ 	xmms_cfg_read_int(cfg, "MPG123", "detect_by", &mpg123_cfg.detect_by);
++ 	xmms_cfg_read_boolean(cfg, "MPG123", "use_rva2", &mpg123_cfg.use_rva2);
++ 	xmms_cfg_read_boolean(cfg, "MPG123", "use_boost", &mpg123_cfg.use_boost);
++ 	xmms_cfg_read_boolean(cfg, "MPG123", "enable_dither", &mpg123_cfg.enable_dither);
++ 	xmms_cfg_read_boolean(cfg, "MPG123", "anticlip_mode", &mpg123_cfg.anticlip_mode);
+ 	xmms_cfg_read_int(cfg, "MPG123", "default_synth", &mpg123_cfg.default_synth);
+ 
+ 	xmms_cfg_free(cfg);
+@@ -925,6 +929,7 @@ static void *decode_loop(void *arg)
+ 				mpg123_info->num_frames * mpg123_info->tpf * 1000;
+ 			if (!mpg123_title)
+ 				mpg123_title = get_song_title(NULL,filename);
++			mpg123_voladjust_update(filename);
+ 		}
+ 		else
+ 		{
+@@ -1081,6 +1086,7 @@ static void *decode_loop(void *arg)
+ 	g_free(mpg123_pcm_sample);
+ 	mpg123_filename = NULL;
+ 	g_free(filename);
++	mpg123_voladjust_cleanup();
+ 	pthread_exit(NULL);
+ }
+ 
+--- xmms-1.2.11/Input/mpg123/mpg123.h.rva	2006-07-24 00:32:44.000000000 +0200
++++ xmms-1.2.11/Input/mpg123/mpg123.h	2007-11-18 21:01:37.000000000 +0100
+@@ -161,6 +161,8 @@ typedef struct
+ 	gboolean title_override, disable_id3v2;
+ 	int detect_by;
+ 	int default_synth;
++ 	gboolean use_rva2, use_boost, enable_dither;
++ 	gint anticlip_mode;
+ }
+ MPG123Config;
+ 
+@@ -306,6 +308,11 @@ double mpg123_relative_pos(void);
+ gboolean mpg123_get_first_frame(FILE *fh, struct frame *frm, guint8 **buffer);
+ const char *mpg123_get_id3_genre(unsigned char genre_code);
+ 
++extern float mpg123_current_gain;
++void mpg123_voladjust_cleanup(void);
++void mpg123_voladjust_update(char *filename);
++void mpg123_voladjust(void *ptr, int length);
++
+ 
+ extern unsigned char *mpg123_conv16to8;
+ extern const int mpg123_freqs[9];
+--- xmms-1.2.11/Input/mpg123/voladjust.c.rva	2007-11-18 21:01:37.000000000 +0100
++++ xmms-1.2.11/Input/mpg123/voladjust.c	2007-11-18 21:01:37.000000000 +0100
+@@ -0,0 +1,356 @@
++#include "mpg123.h"
++#include <string.h>
++#include <stdlib.h>
++
++
++#define ROUND(x) ((int)floor((x) + 0.5))
++
++extern gchar *mpg123_filename;
++
++float mpg123_current_gain = 0.0;
++
++/* lookup table for fast gain adjustments */
++static gint32 *volume_lut = NULL;
++static struct id3_gain gain_info;
++static int adjusting = FALSE;
++
++/* track details of the lookup table, so we only rebuild if we need to */
++static struct {
++	AFormat lut_fmt;
++	float   lut_gain;
++	int     lut_limit;
++	int     lut_boost;
++} lut_data;
++
++/*
++ * A buffer of 8192 random numbers makes the period of the noise about
++ * 85 ms, or 11.7 Hz, for 48 kHz stereo.  This should be low enough to
++ * be unrecognizable except as noise.
++ */
++#define NOISEBUF_SZ 8192
++static char *noisebuf;
++static int noisebufi = 0;
++
++/*
++ * Returns 8 random bits, ie a number from -128 to +127.
++ * Used for dithering.
++ */
++static int
++rand8(void)
++{
++  int retval = (int)noisebuf[noisebufi];
++  noisebufi = (noisebufi + 1) % NOISEBUF_SZ;
++  return retval;
++}
++
++
++/*
++ * Limiter function:
++ *
++ *        / tanh((x + lev) / (1-lev)) * (1-lev) - lev        (for x < -lev)
++ *        |
++ *   x' = | x                                                (for |x| <= lev)
++ *        |
++ *        \ tanh((x - lev) / (1-lev)) * (1-lev) + lev        (for x > lev)
++ *
++ * With limiter level = 0, this is equivalent to a tanh() function;
++ * with limiter level = 1, this is equivalent to clipping.
++ */
++#define lmtr_lvl 0.5
++static double
++limiter(double x)
++{
++	double xp;
++
++	if (x < -lmtr_lvl)
++		xp = tanh((x + lmtr_lvl) / (1-lmtr_lvl)) * (1-lmtr_lvl) - lmtr_lvl;
++	else if (x <= lmtr_lvl)
++		xp = x;
++	else
++		xp = tanh((x - lmtr_lvl) / (1-lmtr_lvl)) * (1-lmtr_lvl) + lmtr_lvl;
++
++	return xp;
++}
++
++
++void mpg123_voladjust_cleanup(void)
++{
++	adjusting = FALSE;
++	if (noisebuf)
++		g_free(noisebuf);
++	noisebuf = NULL;
++	if (volume_lut)
++		g_free(volume_lut - 0x8000);
++	volume_lut = NULL;
++	return;
++}
++
++
++static void update_dither(void)
++{
++	int i;
++
++	if (mpg123_cfg.use_rva2 && mpg123_cfg.enable_dither)
++	{
++		/* fill the noise buffer, which we will cycle through
++		   when dithering */
++		if (noisebuf == NULL) {
++			noisebuf = g_malloc(NOISEBUF_SZ);
++			for (i = 0; i < (NOISEBUF_SZ / sizeof(int)); i++)
++				((int *)noisebuf)[i] = rand();
++			noisebufi = 0;
++			/* Note: noise shaping on the dithering noise
++			   is not implemented, but this would be the
++			   place to do it */
++		}
++	}
++	else
++	{
++		if (noisebuf)
++			g_free(noisebuf);
++		noisebuf = NULL;
++	}
++}
++
++
++static int gain_from_id3_tag(char *filename, struct id3_gain *gn)
++{
++	FILE *file;
++	id3_t *id3d;
++	id3_frame_t *id3frm;
++
++	file = fopen(filename, "rb");
++	if (file == NULL)
++		goto err_out;
++
++	id3d = id3_open_fp(file, 0);
++	if (id3d == NULL)
++		goto err_closefile;
++
++	id3frm = id3_get_frame(id3d, ID3_RVA2, 1);
++	if (id3frm == NULL)
++		goto err_closeid3;
++
++	if (id3_get_rva2_gain(id3frm, gn) == -1)
++		goto err_closeid3;
++
++	id3_close(id3d);
++	fclose(file);
++	return 1;
++
++ err_closeid3:
++	id3_close(id3d);
++ err_closefile:
++	fclose(file);
++ err_out:
++	memset(gn, 0, sizeof(struct id3_gain));
++	return 0;
++}
++
++
++void mpg123_voladjust_update(char *filename)
++{
++	struct id3_gain newgain;
++	float gain_db, gain_mult, scale;
++	int i, use_boost, use_limiter = TRUE, need_update = FALSE;
++	int samplemin, samplemax, center;
++	int lut_samplemin, lut_samplemax, lut_center;
++	AFormat fmt;
++	guint32 peak;
++
++	if (!mpg123_cfg.use_rva2)
++	{
++		mpg123_voladjust_cleanup();
++		return;
++	}
++
++	update_dither();
++
++	if (filename == NULL)
++		filename = mpg123_filename;
++
++	if (filename == NULL)
++		return;
++
++	if (!gain_from_id3_tag(filename, &newgain))
++	{
++		adjusting = FALSE;
++		mpg123_current_gain = 0.0;
++		memset(&gain_info, 0, sizeof(struct id3_gain));
++		return;
++	}
++
++	fmt = mpg123_cfg.resolution == 16 ? FMT_S16_NE : FMT_U8;
++	peak = newgain.channel[ID3_CHANNEL_MASTER].ch_peak;
++	gain_db = newgain.channel[ID3_CHANNEL_MASTER].ch_gain;
++
++	if (volume_lut == NULL)
++	{
++		/* the lookup table is 256k, but is deallocated if
++		   volume adjustment is disabled */
++		volume_lut = g_malloc(0x40000);
++		/* move the pointer to the center of the allocated
++		   region, so that we can use negative indices */
++		volume_lut += 0x8000;
++		need_update = TRUE;
++	}
++
++	gain_mult = pow(10, gain_db / 20.0);
++	use_boost = mpg123_cfg.use_boost;
++	if (use_boost)
++		gain_mult *= 2;
++
++	if (peak)
++	{
++		/*
++		 * Figure out if the peak, multiplied by the gain,
++		 * would clip.
++		 *
++		 * Some trickery here: we don't want to multiply our
++		 * 32-bit peak by the gain, since it may overflow.
++		 * Instead, we round it off to 24 bits. We then
++		 * compare with 0xFFFF80, instead of 0xFFFFFF, to
++		 * leave room for dithering.
++		 */
++		peak = ((peak >> 7) + 1) >> 1;
++		if (peak * gain_mult <= 0xFFFF80)
++			use_limiter = FALSE;
++
++		if (use_limiter && mpg123_cfg.anticlip_mode == 1)
++		{
++			/* Reduce gain until the peak won't clip. */
++			gain_mult = 0xFFFF80 / (float)peak;
++			use_limiter = FALSE;
++		}
++	}
++
++	if (!need_update
++	    && lut_data.lut_fmt == fmt
++	    && lut_data.lut_limit == use_limiter
++	    && lut_data.lut_boost == use_boost
++	    && fabs(lut_data.lut_gain - gain_db) < 0.0001)
++	{
++		/* the existing lookup table we have will work, no
++		   need to build a new one */
++		adjusting = TRUE;
++		return;
++	}
++
++	/* We store 8 extra bits of precision in the table, for use in
++	 * dithering. We can make this happen by simply multiplying
++	 * the gain by 256. */
++	gain_mult *= 256.0;
++
++	if (fmt == FMT_U8)
++	{
++		samplemax = 0xFF;
++		samplemin = 0;
++		lut_samplemax = 0xFFFF;
++		lut_samplemin = 0;
++	}
++	else
++	{ /* fmt == FMT_S16_NE */
++		samplemax = 0x7FFF;
++		samplemin = ~samplemax;
++		lut_samplemax = 0x7FFFFF;
++		lut_samplemin = ~lut_samplemax;
++	}
++
++	/* leave space for dither, which ranges from -128 to +127 */
++	lut_samplemax -= 127;
++	lut_samplemin += 128;
++
++	center = (samplemax + samplemin + 1) >> 1;
++	lut_center = (lut_samplemax + lut_samplemin + 1) >> 1;
++
++	/*
++	 * Build the lookup table
++	 */
++	if (use_limiter)
++	{
++		/* apply gain, and use limiter to avoid clipping */
++		scale = lut_center - lut_samplemin;
++		for (i = samplemin; i < 0; i++)
++			volume_lut[i] = lut_center + ROUND(scale * limiter((i-center) * gain_mult / scale));
++		scale = lut_samplemax - lut_center;
++		for (; i <= samplemax; i++)
++			volume_lut[i] = lut_center + ROUND(scale * limiter((i-center) * gain_mult / scale));
++	}
++	else
++	{
++		/* just apply gain if it wouldn't clip anyway */
++		for (i = samplemin; i <= samplemax; i++)
++			volume_lut[i] = lut_center + ROUND((i-center) * gain_mult);
++	}
++
++	lut_data.lut_fmt = fmt;
++	lut_data.lut_gain = gain_db;
++	lut_data.lut_limit = use_limiter;
++	lut_data.lut_boost = use_boost;
++	mpg123_current_gain = gain_db;
++	adjusting = TRUE;
++
++	return;
++}
++
++
++void mpg123_voladjust(void *ptr, int length)
++{
++	AFormat fmt;
++	int i;
++	long sample;
++	gint16 *ptr16 = NULL;
++	guint8 *ptru8 = NULL;
++
++	if (!adjusting || !mpg123_cfg.use_rva2 || volume_lut == NULL)
++		return;
++
++	fmt = mpg123_cfg.resolution == 16 ? FMT_S16_NE : FMT_U8;
++
++	if (fmt == FMT_U8)
++	{
++		ptru8 = (guint8 *)ptr;
++		if (mpg123_cfg.enable_dither)
++		{
++			for (i = 0; i < length; i++)
++			{
++				sample = volume_lut[*ptru8];
++				sample += rand8();
++				sample >>= 8;
++				*ptru8 = sample;
++				ptru8++;
++			}
++		}
++		else
++		{
++			for (i = 0; i < length; i++)
++			{
++				*ptru8 = volume_lut[*ptru8] >> 8;
++				ptru8++;
++			}
++		}
++	}
++	else
++	{ /* fmt == FMT_S16_NE */
++		ptr16 = (gint16 *)ptr;
++		if (mpg123_cfg.enable_dither)
++		{
++			for (i = 0; i < length; i += 2)
++			{
++				sample = volume_lut[*ptr16];
++				sample += rand8();
++				sample >>= 8;
++				*ptr16 = sample;
++				ptr16++;
++			}
++		}
++		else
++		{
++			for (i = 0; i < length; i += 2)
++			{
++				*ptr16 = volume_lut[*ptr16] >> 8;
++				ptr16++;
++			}
++		}
++	}
++}

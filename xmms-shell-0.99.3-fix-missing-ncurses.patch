@@ -1,0 +1,4 @@
+--- ./xmms-shell-0.99.3/configure.in.gege
++++ ./xmms-shell-0.99.3/configure.in
+@@ -29,0 +29,1 @@
++AC_CHECK_LIB(ncurses, tgetnum)

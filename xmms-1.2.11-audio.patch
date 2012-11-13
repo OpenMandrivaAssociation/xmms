@@ -1,0 +1,20 @@
+diff -p -up xmms-1.2.11/Output/OSS/audio.c.audio xmms-1.2.11/Output/OSS/audio.c
+--- xmms-1.2.11/Output/OSS/audio.c.audio	2005-05-15 02:01:20.000000000 +0200
++++ xmms-1.2.11/Output/OSS/audio.c	2009-02-26 09:45:33.000000000 +0100
+@@ -664,7 +664,7 @@ gint oss_open(AFormat fmt, gint rate, gi
+ 		else
+ 			device_name = g_strdup(DEV_DSP);
+ 	}
+-	fd = open(device_name, O_WRONLY);
++	fd = open(device_name, O_WRONLY|O_NONBLOCK);
+ 	if (fd == -1)
+ 	{
+ 		g_warning("oss_open(): Failed to open audio device (%s): %s",
+@@ -678,6 +678,7 @@ gint oss_open(AFormat fmt, gint rate, gi
+ 	input.channels = nch;
+ 	input.bps = oss_calc_bitrate(oss_get_format(fmt), rate, nch);
+ 
++	fcntl(fd, F_SETFL, fcntl(fd,F_GETFL) &~ O_NONBLOCK);
+ 	oss_setup_format(fmt, rate, nch);
+ 	
+ 	realtime = xmms_check_realtime_priority();

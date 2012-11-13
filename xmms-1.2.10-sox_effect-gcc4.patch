@@ -1,0 +1,33 @@
+--- sox-effect-0.0.1/src/sox.c~	1999-11-23 18:39:34.000000000 +0100
++++ sox-effect-0.0.1/src/sox.c	2005-08-06 22:52:41.000000000 +0200
+@@ -103,13 +103,13 @@
+ 				ibuf[i/nch] = *(gchar*)(data+i);
+ 				*(gchar*)(data+i) = 0;
+ 				if (!sample_signed)
+-(gint32*)ibuf[i/nch] = ((guint32)ibuf[i/nch])-(1<<(sample_sz*8-1));
++ibuf[i/nch] = ((guint32)ibuf[i/nch])-(1<<(sample_sz*8-1));
+ 				break;
+ 			case 2:
+ 				ibuf[i/2/nch] = *(gint16*)(data+i);
+ 				*(gint16*)(data+i) = 0;
+ 				if (!sample_signed)
+-(gint32*)ibuf[i/2/nch] = ((guint32)ibuf[i/2/nch])-(1<<(sample_sz*16-1));
++ibuf[i/2/nch] = ((guint32)ibuf[i/2/nch])-(1<<(sample_sz*16-1));
+ 				break;
+ 		}
+ 
+@@ -127,12 +127,12 @@
+ 		switch (sample_sz) {
+ 			case 1:
+ 				if (!sample_signed)
+-((guint32)obuf[i/nch]) = obuf[i/nch]+(1<<(sample_sz*8-1));
++obuf[i/nch] = obuf[i/nch]+(1<<(sample_sz*8-1));
+ 				*(gchar*)(data+i) = obuf[i/nch];
+ 				break;
+ 			case 2:
+ 				if (!sample_signed)
+-((guint32)obuf[i/2/nch]) = obuf[i/2/nch]+(1<<(sample_sz*16-1));
++obuf[i/2/nch] = obuf[i/2/nch]+(1<<(sample_sz*16-1));
+ 				*(gint16*)(data+i) = obuf[i/2/nch];
+ 				break;
+ 		}

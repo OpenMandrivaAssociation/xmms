@@ -1,0 +1,119 @@
+--- ./xmms/textbox.c.gege	Fri Oct 20 15:40:33 2000
++++ ./xmms/textbox.c	Tue Nov 28 13:07:21 2000
+@@ -318,6 +318,102 @@
+ 			*x = 20;
+ 			*y = 12;
+ 			break;
++			/* Some substitutions for iso-8859-1
++			 * TODO: make it charset encoding dependent
++			 */
++				case 'æ':
++				case 'Æ':
++
++					*x = 10;
++					*y = 12;
++					break;
++				case 'à':
++				case 'À':
++				case 'á':
++				case 'Á':
++				case 'â':
++				case 'Â':
++				case 'ã':
++				case 'Ã':
++					*x = 0;
++					*y = 0;
++					break;
++				case 'ç':
++				case 'Ç':
++					*x = 10;
++					*y = 0;
++					break;
++				case 'è':
++				case 'È':
++				case 'é':
++				case 'É':
++				case 'ê':
++				case 'Ê':
++				case 'ë':
++				case 'Ë':
++					*x = 20;
++					*y = 0;
++					break;
++				case 'ì':
++				case 'Ì':
++				case 'í':
++				case 'Í':
++				case 'î':
++				case 'Î':
++				case 'ï':
++				case 'Ï':
++					*x = 40;
++					*y = 0;
++					break;
++				case 'ð':
++				case 'Ð':
++					*x = 15;
++					*y = 0;
++					break;
++				case 'ñ':
++				case 'Ñ':
++					*x = 65;
++					*y = 0;
++					break;
++				case 'ò':
++				case 'Ò':
++				case 'ó':
++				case 'Ó':
++				case 'ô':
++				case 'Ô':
++				case 'õ':
++				case 'Õ':
++				case 'ø':
++				case 'Ø':
++					*x = 70;
++					*y = 0;
++					break;
++				case 'ù':
++				case 'Ù':
++				case 'ú':
++				case 'Ú':
++				case 'û':
++				case 'Û':
++				case 'ü':
++				case 'Ü':
++					*x = 100;
++					*y = 0;
++					break; 
++				case 'ý':
++				case 'Ý':
++				case 'ÿ':
++					*x = 120;
++					*y = 0;
++					break;
++				case 'þ':
++				case 'Þ':
++					*x = 95;
++					*y = 0;
++					break;
++				case 'ß':
++					*x = 5;
++					*y = 0;
++		/* other chars are mapped to a space */
+ 		default:
+ 			*x = 145;
+ 			*y = 0;
+--- ./xmms/textbox.c.gege	Tue Nov 28 13:25:16 2000
++++ ./xmms/textbox.c	Tue Nov 28 13:28:02 2000
+@@ -305,11 +305,6 @@
+ 			*x = 10;
+ 			*y = 12;
+ 			break;
+-		case 'ü':
+-		case 'Ü':
+-			*x = 100;
+-			*y = 0;
+-			break;
+ 		case '?':
+ 			*x = 15;
+ 			*y = 12;
