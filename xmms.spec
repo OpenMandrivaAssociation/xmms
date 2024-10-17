@@ -18,7 +18,7 @@ Version:	%{version}
 Release:	%{release}
 License:	GPLv2+
 Group:		Sound
-URL:		http://www.xmms.org/
+URL:		https://www.xmms.org/
 Source0:	http://www.xmms.org/files/1.2.x/%{fname}.tar.bz2
 Source4:	%{name}-icons.tar.bz2
 Source10:	%{name}.16.png
