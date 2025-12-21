@@ -58,6 +58,9 @@ Patch108:	xmms-1.2.11-ipv6-merge.patch
 Patch109:	xmms-1.2.10-crossfade-0.3.9.patch
 # #29976, CVE-2007-0653,0654
 Patch111:	xmms-1.2.11-CVE-2007-0653.0654.patch
+BuildRequires:	autoconf
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
 BuildRequires:	ORBit-devel
 BuildRequires:	automake
 BuildRequires:	db1-devel
